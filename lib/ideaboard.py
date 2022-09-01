@@ -71,6 +71,10 @@ class IdeaBoard:
             pos -= 170
             return (0, int(pos * 3), int(255 - pos * 3))
         
+    def scale(self, x, in_min, in_max, out_min, out_max):
+        return (x - in_min) * (out_max - out_min) / (in_max - in_min) + out_min
+        
+        
     class Servo:
         def __init__(self, pin):
             """
