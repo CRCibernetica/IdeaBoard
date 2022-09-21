@@ -76,42 +76,40 @@ class IdeaBoard:
         
         
     class Servo:
-        def __init__(self, pin):
-            """
-            Initialize the servo
+        """
+        A simple class for controlling hobby servos.
 
-            """
-            self._servo = PWM(Pin(pin))
-            self._servo.freq(50) # 50Hz for most hobby servos
-            
-            # Calibrate the servo 1170 y el máximo es 8664
-            self._duty_eq = self.calibrate(min_duty = 1170, max_duty = 8664, min_angle = 0, max_angle = 210)
-            self.angle(0)
-        
-        def calibrate(self, min_duty, max_duty, min_angle = 0, max_angle = 180):
-            """
-            Calibrate the servo range and angle
-                        
-            """
-            self._duty_eq = lambda angle: (angle - min_angle) * (max_duty - min_duty) / (max_angle - min_angle) + min_duty
-            return self._duty_eq
+        Args:
+            pin: The pin where servo is connected. Must support PWM.
+            freq (int): The frequency of the signal, in hertz.
+            min_us (int): The minimum signal length supported by the servo.
+            max_us (int): The maximum signal length supported by the servo.
+            max_angle (int): The angle between the minimum and maximum positions.
 
-        def angle(self, angle):
-            """
-            Set the angle of the servo.
-            
-            """
+        """
+        def __init__(self, pin, freq=50, min_us=600, max_us=2400, max_angle=180):
+            self.min_us = min_us
+            self.max_us = max_us
+            self.us = 0
+            self.freq = freq
+            self.max_angle = max_angle
+            self.pwm = PWM(Pin(pin), freq=freq, duty=0)
 
-            duty = int(self._duty_eq(angle))
-            #print(duty)
-            self._servo.duty_u16(duty)
-        
-        def set_duty(self, duty):
-            """
-            Manually set the duty cycle of the signal.
-            
-            """
-            self._servo.duty_u16(duty)
+        def write_us(self, us):
+            """Set the signal to be ``us`` microseconds long. Zero disables it."""
+            if us == 0:
+                self.pwm.duty(0)
+                return
+            us = min(self.max_us, max(self.min_us, us))
+            duty = us * 1024 * self.freq // 1000000
+            self.pwm.duty(duty)
+
+        def angle(self, degrees):
+            """Move to the specified angle in ``degrees``."""
+            degrees = degrees % 360
+            total_range = self.max_us - self.min_us
+            us = self.min_us + total_range * degrees // self.max_angle
+            self.write_us(us)
             
     class AnalogIn:
         def __init__(self, pin):
